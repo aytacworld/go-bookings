@@ -1,25 +1,46 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/aytacworld/go-bookings/pkg/config"
-	"github.com/aytacworld/go-bookings/pkg/handlers"
-	"github.com/aytacworld/go-bookings/pkg/render"
+	"github.com/aytacworld/go-bookings/internal/config"
+	"github.com/aytacworld/go-bookings/internal/handlers"
+	"github.com/aytacworld/go-bookings/internal/models"
+	"github.com/aytacworld/go-bookings/internal/render"
 )
 
-const port = ":8080"
+const portNumber = ":8080"
 
 var app config.AppConfig
 var session *scs.SessionManager
 
 // main this is the main function
 func main() {
-	// change this to true in prod
+    err := run()
+    if err != nil {
+        log.Fatal(err)
+    }
+	
+	fmt.Println(fmt.Sprintf("Starting application on port %s", portNumber))
+
+	srv := &http.Server{
+		Addr:    portNumber,
+		Handler: routes(&app),
+	}
+
+	err = srv.ListenAndServe()
+	log.Fatal(err)
+}
+
+func run() error {
+    // what am I going to put in the session
+    gob.Register(models.Reservation{})
+    // change this to true in prod
 	app.InProduction = false
 
 	session = scs.New()
@@ -33,6 +54,7 @@ func main() {
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatal("cannot create template cache")
+        return err
 	}
 
 	app.TemplateCache = tc
@@ -42,13 +64,6 @@ func main() {
 	handlers.NewHandlers(repo)
 	render.NewTemplates(&app)
 
-	fmt.Println(fmt.Sprintf("Starting application on port %s", port))
-
-	srv := &http.Server{
-		Addr:    port,
-		Handler: routes(&app),
-	}
-
-	err = srv.ListenAndServe()
-	log.Fatal(err)
+    return nil
 }
+
