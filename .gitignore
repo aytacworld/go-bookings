@@ -1,3 +1,7 @@
 .idea
 .vscode
+.DS_Store
+coverage.out
 bookings
+database.yml
+migrations/schema.sql
